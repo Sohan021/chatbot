@@ -1,124 +1,53 @@
-import React, { useState, useEffect } from "react";
 import "./App.css";
-import { DetectDominantLanguageCommand } from "@aws-sdk/client-comprehend";
-import { TranslateTextCommand } from "@aws-sdk/client-translate";
-import { PostTextCommand } from "@aws-sdk/client-lex-runtime-service";
-import { lexClient } from "./libs/lexClient.js";
-import { translateClient } from "./libs/translateClient.js";
-import { comprehendClient } from "./libs/comprehendClient.js";
+import Chat from "./Chat";
+
+const ImageCard = ({ image, title, description }) => (
+  <div className="max-w-sm rounded overflow-hidden shadow-lg">
+    <img className="w-full h-40 object-cover" src={image} alt={title} />
+    <div className="px-6 py-2"> {/* Adjusted the height from py-4 to py-2 */}
+      <div className="font-bold text-xl mb-2">{title}</div>
+      <p className="text-gray-700 text-base">{description}</p>
+    </div>
+  </div>
+);
+
+
+
+const imageCards = [
+  {
+    image: 'https://assets.bonappetit.com/photos/62f5674caf9bae430097be0f/1:1/w_1920,c_limit/0810-no-fail-roast-chicken-v2.jpg',
+    title: 'Chicken',
+    description: 'Chicken Masala is a flavorful Indian dish that combines tender pieces of chicken with a rich blend of aromatic spices, creating a mouthwatering and spicy culinary experience.',
+  },
+  {
+    image: 'https://feastwithsafiya.com/wp-content/uploads/2021/08/Baked-fish-masala-recipe.jpg',
+    title: 'Fish',
+    description: 'Fish Masala is a delectable seafood dish featuring fish marinated in a vibrant mix of spices and herbs, resulting in a tantalizing flavor profile that perfectly complements the tender texture of the fish.',
+  },
+  {
+    image: 'https://thevegconnection.com/wp-content/uploads/2023/01/Potato-Cauliflower-Tikka-Masala-22-Edit-720x720.jpg',
+    title: 'Vegetable',
+    description: 'Vegetable Masala is a vegetarian delight, showcasing a medley of fresh vegetables cooked in a fragrant blend of spices, offering a hearty and wholesome dish bursting with savory and aromatic goodness.',
+  },
+];
 
 function App() {
-  const [gText, setGText] = useState("");
-  const [wisdomText, setWisdomText] = useState("");
-  const [conversation, setConversation] = useState([]);
-
-  useEffect(() => {
-    // Set the focus to the input box.
-    document.getElementById("wisdom").focus();
-  }, []);
-
-  const showRequest = () => {
-    setConversation((prevConversation) => [
-      ...prevConversation,
-      { text: gText, className: "userRequest" },
-    ]);
-  };
-
-  const showResponse = (lexResponse) => {
-    setConversation((prevConversation) => [
-      ...prevConversation,
-      { text: lexResponse, className: "lexResponse" },
-    ]);
-  };
-
-  const handletext = (text) => {
-    setGText(text);
-    // Make your XMLHttpRequest here if needed
-  };
-
-  const loadNewItems = () => {
-    showRequest();
-    setWisdomText("");
-  };
-
-  const createResponse = async () => {
-    if (wisdomText && wisdomText.trim().length > 0) {
-      setWisdomText("hi");
-      handletext("hi");
-
-      try {
-        const data = await comprehendClient.send(
-          new DetectDominantLanguageCommand({ Text: wisdomText })
-        );
-        console.log("Success. The language code is: ", data.Languages[0].LanguageCode);
-
-        const translateParams = {
-          SourceLanguageCode: data.Languages[0].LanguageCode,
-          TargetLanguageCode: "en",
-          Text: wisdomText,
-        };
-
-        try {
-          const translationData = await translateClient.send(
-            new TranslateTextCommand(translateParams)
-          );
-
-          console.log("Success. Translated text: ", translationData.TranslatedText);
-
-          const lexParams = {
-            botName: "KazLunchSheet",
-            botAlias: "TestBotAlias",
-            inputText: translationData.TranslatedText,
-            userId: "chatbot-6",
-          };
-
-          try {
-            const lexData = await lexClient.send(new PostTextCommand(lexParams));
-            console.log("Success. Response is: ", lexData.message);
-            showResponse(lexData.message);
-          } catch (err) {
-            console.log("Error responding to message. ", err);
-          }
-        } catch (err) {
-          console.log("Error translating text. ", err);
-        }
-      } catch (err) {
-        console.log("Error identifying language. ", err);
-      }
-    }
-  };
-
   return (
     <div className="App">
-      <h1 id="title">Amazon Lex - BookTrip</h1>
-      <p id="intro">
-        This multiple language chatbot shows you how easy it is to incorporate
-        <a
-          href="https://aws.amazon.com/lex/"
-          title="Amazon Lex (product)"
-          target="_new"
-        >
-          Amazon Lex
-        </a>
-        into your web apps. Try it out.
-      </p>
-      <div id="conversation">
-        {conversation.map((item, index) => (
-          <p key={index} className={item.className}>
-            {item.text}
-          </p>
-        ))}
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-200">
+        <div className="mb-8 flex flex-col items-center">
+          <img src="https://media.licdn.com/dms/image/C4E0BAQFeP_7jSb8obw/company-logo_200_200/0/1630581217006/kaz_software_limited_logo?e=2147483647&v=beta&t=gWbv3PZCuDII8jjEkVFnif_TrDTy5pWvxAHwyZyVv7I" alt="Logo" className="rounded-full mb-4" />
+          <h1 className="text-3xl font-bold text-gray-800">Lunch Subscription Service</h1>
+          <p className="text-gray-600">Enjoy delightful meals delivered to your door!</p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {imageCards.map((card, index) => (
+            <ImageCard key={index} {...card} />
+          ))}
+        </div>
       </div>
-      <input
-        type="text"
-        id="wisdom"
-        size="80"
-        value={wisdomText}
-        onChange={(e) => setWisdomText(e.target.value)}
-        placeholder="J'ai besoin d'une chambre d'hôtel"
-      />
-      <br />
-      <button onClick={createResponse}>Send Text</button>
+
+      <Chat />
     </div>
   );
 }
